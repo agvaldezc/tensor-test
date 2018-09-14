@@ -2,13 +2,17 @@ import { BrowserModule } from '@angular/platform-browser';
 import { NgModule } from '@angular/core';
 
 import { AppComponent } from './app.component';
+import { AppRoutingModule } from './routing/app-routing.module';
+import { RegressionComponent } from './regression/regression.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    RegressionComponent
   ],
   imports: [
-    BrowserModule
+    BrowserModule,
+    AppRoutingModule
   ],
   providers: [],
   bootstrap: [AppComponent]
