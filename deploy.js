@@ -1,97 +1,68 @@
 /** Library imports */
-const { exec } = require('child_process');
+const { execSync, exec } = require('child_process');
 const encrypter = require('crypto-js');
 
 /** Environment constants */
-const activationLocalRepoUrl = '';
-const aemLocalRepoUrl = '';
+const localBuildUrl = './dist/tensor-test';
+const destinationUrl = './test';
 const args = process.argv;
+const baseBranch = 'master';
 
-/** Generate  */
+/** Generate buld branch hash to identify when the build was done */
 const today = new Date().toISOString();
-const todayHash = encrypter.SHA256(today);
+const todayHash = encrypter.SHA256(today).toString();
 
 const buildBranchName = `build/${todayHash}`;
 
-/** Git pipeline commands */
-const gitCommands = [
-    `git checkout master`,
-    `git checkout -b ${todayHash}`,
-    `git add .`,
-    `git commit -m "test commit"`,
-    `git push -u ${todayHash}`
+/** Build File Replacement commands */
+const fileReplacementCommands = [
+    `mv ${localBuildUrl + '/main.js'} ${destinationUrl + '/main.js'}`,
+    `mv ${localBuildUrl + '/vendor.js'} ${destinationUrl + '/vendor.js'}`,
 ];
 
-console.log(todayHash);
+/** Git pipeline commands */
+const gitCommands = [
+    `git checkout ${baseBranch}`,
+    `git checkout -b ${buildBranchName}`,
+    `git add .`,
+    `git commit -m "test commit"`,
+    `git push --set-upstream origin ${buildBranchName}`
+];
 
-/*
-exec(`mv ./dist/tensor-test/main.js ./test/main.js`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
+/**
+ * Run a batch of console commands choosing the type of execution wanted for them.
+ * @param {string[]} commandArray Array of string console commands to execute.
+ * @param {string} executionType Type of execution 'sync' for sequential, 'async' for parallel.
+ */
+function runBatchCommands(commandArray, executionType) {
+    console.log(`***** Batch command execution started *****`)
+    switch (executionType) {
+        case 'sync':
+            for (let command of commandArray) {
+                execSync(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`${command} failed with error output: ${error}`);
+                        return;
+                    }
+                    console.log(`${command} ran successfully with output: ${stdout}`);
+                });
+            }
+        break;
+        case 'async':
+            for (let command of commandArray) {
+                exec(command, (error, stdout, stderr) => {
+                    if (error) {
+                        console.error(`${command} failed with error output: ${error}`);
+                        return;
+                    }
+                    console.log(`${command} ran successfully with output: ${stdout}`);
+                });
+            }
+        break;
     }
+}
 
-    console.log(stdout);
-    console.log(stderr);
-});*/
-
-/*
-exec(`git checkout master`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    console.log(stdout);
-    console.log(stderr);
-});
-
-exec(`git checkout -b ${today}`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    console.log(stdout);
-    console.log(stderr);
-});
-
-exec(`git add .`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    console.log(stdout);
-    console.log(stderr);
-});
-
-exec(`git commit -m "test commit"`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    console.log(stdout);
-    console.log(stderr);
-});
-
-exec(`git push -u ${today}`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    console.log(stdout);
-    console.log(stderr);
-});*/
-
-exec(`git checkout master | git checkout -b ${today} | git add . | git commit -m "test commit" | git push -u ${today}`, (error, stdout, stderr) => {
-    if (error) {
-        console.error(error);
-        return;
-    }
-
-    console.log(stdout);
-    console.log(stderr);
-});
+/** Execution of tasks */
+console.log(`Temp build branch is ${buildBranchName} with hash ${todayHash}`);
+runBatchCommands(fileReplacementCommands, 'sync');
+runBatchCommands(gitCommands, 'sync');
